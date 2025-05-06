@@ -19,11 +19,11 @@ pipeline {
 
         stage('Terraform Init & Apply') {
             steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-credentials',
-                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                withCredentials([[ 
+                    $class: 'AmazonWebServicesCredentialsBinding', 
+                    credentialsId: 'aws-credentials', 
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID', 
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY' 
                 ]]) {
                     dir('terraform') {
                         sh 'terraform init'
@@ -44,9 +44,10 @@ pipeline {
 
         stage('Run Ansible Playbooks') {
             steps {
+                // For Backend (Ubuntu)
                 withCredentials([sshUserPrivateKey(
-                    credentialsId: 'ansible-ssh-key',  // your Jenkins credentials ID
-                    keyFileVariable: 'SSH_PRIVATE_KEY'  // The name of the environment variable where the private key is stored
+                    credentialsId: 'ubuntu-ssh-key',  // Referencing Ubuntu credentials ID
+                    keyFileVariable: 'SSH_PRIVATE_KEY'
                 )]) {
                     dir('ansible') {
                         sh '''
@@ -55,9 +56,22 @@ pipeline {
 
                             # Run backend playbook with 'ubuntu' user
                             ansible-playbook -i inventory.ini playbook_backend.yml --private-key=$SSH_PRIVATE_KEY -u ubuntu
+                        '''
+                    }
+                }
+
+                // For Frontend (AWS EC2)
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: 'aws-ec2-ssh-key',  // Referencing AWS EC2 credentials ID
+                    keyFileVariable: 'EC2_SSH_PRIVATE_KEY'
+                )]) {
+                    dir('ansible') {
+                        sh '''
+                            chmod 600 $EC2_SSH_PRIVATE_KEY
+                            export ANSIBLE_HOST_KEY_CHECKING=False
 
                             # Run frontend playbook with 'ec2-user'
-                            ansible-playbook -i inventory.ini playbook_frontend.yml --private-key=$SSH_PRIVATE_KEY -u ec2-user
+                            ansible-playbook -i inventory.ini playbook_frontend.yml --private-key=$EC2_SSH_PRIVATE_KEY -u ec2-user
                         '''
                     }
                 }
