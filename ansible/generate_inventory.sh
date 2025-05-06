@@ -8,7 +8,7 @@ SSH_KEY_PATH="/var/lib/jenkins/.ssh/jenkins_key"
 INVENTORY_FILE="./ansible/inventory.ini"
 
 # Navigate to terraform directory to extract outputs
-cd ansible
+cd terraform
 
 # Extract IPs from Terraform output
 BACKEND_IP=$(terraform output -raw backend_ip)
