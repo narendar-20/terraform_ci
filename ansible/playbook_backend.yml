@@ -1,19 +1,24 @@
 - name: Configure backend (Ubuntu)
   hosts: backend
-  become: yes
+  become: true
   tasks:
-    - name: Disable UFW
-      command: ufw disable
-      ignore_errors: yes
+    - name: Disable SELinux (Ubuntu doesn't use it, so skip)
+      command: echo "SELinux not applicable on Ubuntu"
+      changed_when: false
+
+    - name: Disable firewalld
+      apt:
+        name: ufw
+        state: absent
 
     - name: Install Netdata
       apt:
         name: netdata
         state: present
-        update_cache: yes
+      update_cache: yes
 
     - name: Ensure Netdata is running
-      systemd:
+      service:
         name: netdata
         state: started
         enabled: yes
