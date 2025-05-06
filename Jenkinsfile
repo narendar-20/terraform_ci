@@ -1,23 +1,21 @@
 pipeline {
     agent any
-
     tools {
-        terraform 'terraform'  // name from Global Tool Configuration
-        ansible 'ansible'      // name from Global Tool Configuration
+        terraform 'terraform'
+        ansible 'ansible'
     }
-
     environment {
-        AWS_DEFAULT_REGION = 'us-east-1' // adjust if needed
+        AWS_DEFAULT_REGION = 'us-east-1'
     }
 
     stages {
-        stage('Clone Repository') {
+        stage('Clone Repo') {
             steps {
-                git branch: 'main', url: 'https://github.com/RameshDumala1/terraform_ci.git'
+                git branch: 'main', url: 'https://github.com/your-repo.git'
             }
         }
 
-        stage('Terraform Init & Apply') {
+        stage('Terraform Apply') {
             steps {
                 withCredentials([[ 
                     $class: 'AmazonWebServicesCredentialsBinding', 
@@ -33,46 +31,28 @@ pipeline {
             }
         }
 
-        stage('Generate Ansible Inventory') {
+        stage('Generate Inventory') {
             steps {
                 dir('ansible') {
                     sh 'chmod +x generate_inventory.sh'
-                    sh './generate_inventory.sh > inventory.ini'
+                    sh './generate_inventory.sh'
                 }
             }
         }
 
-        stage('Run Ansible Playbooks') {
+        stage('Configure VMs') {
             steps {
-                // For Backend (Ubuntu)
-                withCredentials([sshUserPrivateKey(
-                    credentialsId: 'jenkins-ssh-key1',  // Updated credential ID for Ubuntu
-                    keyFileVariable: 'SSH_PRIVATE_KEY'
-                )]) {
-                    dir('ansible') {
-                        sh '''
-                            chmod 600 $SSH_PRIVATE_KEY
-                            export ANSIBLE_HOST_KEY_CHECKING=False
+                withCredentials([sshUserPrivateKey(credentialsId: 'ssh-key-ubuntu', keyFileVariable: 'UBUNTU_KEY')]) {
+                    withCredentials([sshUserPrivateKey(credentialsId: 'ssh-key-amazon', keyFileVariable: 'AMAZON_KEY')]) {
+                        dir('ansible') {
+                            sh '''
+                                chmod 600 $UBUNTU_KEY $AMAZON_KEY
+                                export ANSIBLE_HOST_KEY_CHECKING=False
 
-                            # Run backend playbook with 'ubuntu' user
-                            ansible-playbook -i inventory.ini playbook_backend.yml --private-key=$SSH_PRIVATE_KEY -u ubuntu
-                        '''
-                    }
-                }
-
-                // For Frontend (Amazon Linux)
-                withCredentials([sshUserPrivateKey(
-                    credentialsId: 'jenkins-ssh-key',  // Updated credential ID for Amazon Linux
-                    keyFileVariable: 'EC2_SSH_PRIVATE_KEY'
-                )]) {
-                    dir('ansible') {
-                        sh '''
-                            chmod 600 $EC2_SSH_PRIVATE_KEY
-                            export ANSIBLE_HOST_KEY_CHECKING=False
-
-                            # Run frontend playbook with 'ec2-user'
-                            ansible-playbook -i inventory.ini playbook_frontend.yml --private-key=$EC2_SSH_PRIVATE_KEY -u ec2-user
-                        '''
+                                ansible-playbook -i inventory.ini playbook_backend.yml --private-key=$UBUNTU_KEY -u ubuntu
+                                ansible-playbook -i inventory.ini playbook_frontend.yml --private-key=$AMAZON_KEY -u ec2-user
+                            '''
+                        }
                     }
                 }
             }
@@ -80,11 +60,11 @@ pipeline {
     }
 
     post {
-        failure {
-            echo '❌ Build failed.'
-        }
         success {
-            echo '✅ CI pipeline completed successfully.'
+            echo '✅ Deployment and configuration complete!'
+        }
+        failure {
+            echo '❌ Something went wrong.'
         }
     }
 }
