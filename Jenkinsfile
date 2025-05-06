@@ -11,7 +11,6 @@ pipeline {
     }
 
     stages {
-
         stage('Clone Repository') {
             steps {
                 git branch: 'main', url: 'https://github.com/RameshDumala1/terraform_ci.git'
@@ -27,7 +26,9 @@ pipeline {
                     secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                 ]]) {
                     dir('terraform') {
+                        // Initialize Terraform
                         sh 'terraform init'
+                        // Apply Terraform configuration
                         sh 'terraform apply -auto-approve'
                     }
                 }
@@ -36,15 +37,17 @@ pipeline {
 
         stage('Generate Ansible Inventory') {
             steps {
-                sh 'chmod +x generate_inventory.sh'
-                sh './generate_inventory.sh'
-                sh 'cat ansible/inventory.ini'
+                script {
+                    // Run the inventory.py to generate the inventory.ini dynamically
+                    sh 'cd ansible && python3 inventory.py > inventory.ini'
+                }
             }
         }
 
         stage('Run Ansible Playbooks') {
             steps {
                 dir('ansible') {
+                    // Run Ansible playbooks for backend and frontend
                     sh '''
                         ansible-playbook -i inventory.ini playbook_backend.yml
                         ansible-playbook -i inventory.ini playbook_frontend.yml
@@ -52,7 +55,6 @@ pipeline {
                 }
             }
         }
-
     }
 
     post {
