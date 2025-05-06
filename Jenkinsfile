@@ -43,25 +43,26 @@ pipeline {
         }
 
         stage('Run Ansible Playbooks') {
-            steps {
-                withCredentials([sshUserPrivateKey(
-                    credentialsId: 'ansible-ssh-key',
-                    keyFileVariable: 'SSH_PRIVATE_KEY',
-                    usernameVariable: 'SSH_USER'
-                )]) {
-                    dir('ansible') {
-                        sh '''
-                            chmod 600 $SSH_PRIVATE_KEY
-                            export ANSIBLE_HOST_KEY_CHECKING=False
-                            ansible-playbook -i inventory.ini playbook_backend.yml --private-key=$SSH_PRIVATE_KEY -u $SSH_USER
-                            ansible-playbook -i inventory.ini playbook_frontend.yml --private-key=$SSH_PRIVATE_KEY -u $SSH_USER
-                        '''
-                    }
-                }
+    steps {
+        withCredentials([sshUserPrivateKey(
+            credentialsId: 'ansible-ssh-key',
+            keyFileVariable: 'SSH_PRIVATE_KEY'
+        )]) {
+            dir('ansible') {
+                sh '''
+                    chmod 600 $SSH_PRIVATE_KEY
+                    export ANSIBLE_HOST_KEY_CHECKING=False
+
+                    # Run backend playbook with 'ubuntu' user
+                    ansible-playbook -i inventory.ini playbook_backend.yml --private-key=$SSH_PRIVATE_KEY -u ubuntu
+
+                    # Run frontend playbook with 'ec2-user'
+                    ansible-playbook -i inventory.ini playbook_frontend.yml --private-key=$SSH_PRIVATE_KEY -u ec2-user
+                '''
             }
         }
     }
-
+}
     post {
         failure {
             echo '❌ Build failed.'
