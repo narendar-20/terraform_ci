@@ -3,9 +3,9 @@ provider "aws" {
 }
 
 resource "aws_instance" "frontend" {
-  ami           = "ami-0c02fb55956c7d316"
+  ami           = "ami-085386e29e44dacd7"
   instance_type = "t2.micro"
-  key_name      = "your-key-name"
+  key_name      = "ubuntu"
 
   tags = {
     Name = "c8.local"
@@ -17,9 +17,9 @@ resource "aws_instance" "frontend" {
 }
 
 resource "aws_instance" "backend" {
-  ami           = "ami-04b70fa74e45c3917"
+  ami           = "ami-0f9de6e2d2f067fca"
   instance_type = "t2.micro"
-  key_name      = "your-key-name"
+  key_name      = "ubuntu"
 
   tags = {
     Name = "u21.local"
