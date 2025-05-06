@@ -11,11 +11,14 @@
         name: ufw
         state: absent
 
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
     - name: Install Netdata
       apt:
         name: netdata
         state: present
-      update_cache: yes
 
     - name: Ensure Netdata is running
       service:
