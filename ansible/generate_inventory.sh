@@ -1,20 +1,38 @@
 #!/bin/bash
 
-# Get IPs from Terraform output
-FRONTEND_IP=$(terraform -chdir=../terraform output -raw frontend_ip)
-BACKEND_IP=$(terraform -chdir=../terraform output -raw backend_ip)
+# Exit on any error
+set -e
 
-# Set paths to private key files
-FRONTEND_KEY_PATH="/var/lib/jenkins/.ssh/jenkins_key"  # Private key for ec2-user (Frontend)
-BACKEND_KEY_PATH="/var/lib/jenkins/.ssh/jenkins_key1"  # Private key for ubuntu (Backend)
+# Define path to private key and inventory
+SSH_KEY_PATH="/var/lib/jenkins/.ssh/jenkins_key"
+INVENTORY_FILE="./ansible/inventory.ini"
 
-# Generate the inventory.ini file dynamically
-cat <<EOF > inventory.ini
-[frontend]
-$FRONTEND_IP ansible_user=ec2-user ansible_ssh_private_key_file=$FRONTEND_KEY_PATH
+# Navigate to terraform directory to extract outputs
+cd terraform
 
+# Extract IPs from Terraform output
+BACKEND_IP=$(terraform output -raw backend_ip)
+FRONTEND_IP=$(terraform output -raw frontend_ip)
+
+# Move back to root
+cd ..
+
+# Generate inventory.ini
+echo "Generating inventory.ini with backend IP: $BACKEND_IP and frontend IP: $FRONTEND_IP"
+
+cat <<EOL > $INVENTORY_FILE
 [backend]
-$BACKEND_IP ansible_user=ubuntu ansible_ssh_private_key_file=$BACKEND_KEY_PATH
-EOF
+$BACKEND_IP ansible_user=ubuntu ansible_ssh_private_key_file=$SSH_KEY_PATH
 
-echo "Inventory file generated with IPs and private key paths."
+[frontend]
+$FRONTEND_IP ansible_user=ec2-user ansible_ssh_private_key_file=$SSH_KEY_PATH
+EOL
+
+echo "inventory.ini generated successfully at $INVENTORY_FILE"
+
+# Optional: Run Ansible Playbooks
+echo "Running backend playbook..."
+ansible-playbook -i $INVENTORY_FILE ansible/playbook_backend.yml --private-key=$SSH_KEY_PATH -u ubuntu
+
+echo "Running frontend playbook..."
+ansible-playbook -i $INVENTORY_FILE ansible/playbook_frontend.yml --private-key=$SSH_KEY_PATH -u ec2-user
