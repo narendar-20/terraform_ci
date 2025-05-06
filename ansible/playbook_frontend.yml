@@ -1,29 +1,35 @@
 - name: Configure frontend (Amazon Linux)
   hosts: frontend
-  become: yes
+  become: true
   tasks:
     - name: Disable SELinux
-      command: setenforce 0
-      ignore_errors: yes
+      selinux:
+        state: disabled
 
-    - name: Stop and disable firewalld
-      systemd:
+    - name: Disable firewalld
+      service:
         name: firewalld
-        enabled: no
         state: stopped
+        enabled: no
 
-    - name: Install nginx
+    - name: Install Nginx
       yum:
         name: nginx
         state: present
 
-    - name: Copy nginx reverse proxy config
-      template:
-        src: nginx_proxy.conf.j2
-        dest: /etc/nginx/conf.d/reverse-proxy.conf
+    - name: Configure nginx for reverse proxy
+      copy:
+        dest: /etc/nginx/conf.d/proxy.conf
+        content: |
+          server {
+              listen 80;
+              location / {
+                  proxy_pass http://{{ hostvars['u21.local'].ansible_host }}:19999/;
+              }
+          }
 
-    - name: Start nginx
-      systemd:
+    - name: Start and enable nginx
+      service:
         name: nginx
         state: started
         enabled: yes
