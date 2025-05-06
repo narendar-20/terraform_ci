@@ -1,0 +1,19 @@
+- name: Configure backend (Ubuntu)
+  hosts: backend
+  become: yes
+  tasks:
+    - name: Disable UFW
+      command: ufw disable
+      ignore_errors: yes
+
+    - name: Install Netdata
+      apt:
+        name: netdata
+        state: present
+        update_cache: yes
+
+    - name: Ensure Netdata is running
+      systemd:
+        name: netdata
+        state: started
+        enabled: yes

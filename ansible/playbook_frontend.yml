@@ -1,0 +1,29 @@
+- name: Configure frontend (Amazon Linux)
+  hosts: frontend
+  become: yes
+  tasks:
+    - name: Disable SELinux
+      command: setenforce 0
+      ignore_errors: yes
+
+    - name: Stop and disable firewalld
+      systemd:
+        name: firewalld
+        enabled: no
+        state: stopped
+
+    - name: Install nginx
+      yum:
+        name: nginx
+        state: present
+
+    - name: Copy nginx reverse proxy config
+      template:
+        src: nginx_proxy.conf.j2
+        dest: /etc/nginx/conf.d/reverse-proxy.conf
+
+    - name: Start nginx
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes

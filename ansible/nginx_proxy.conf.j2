@@ -1,0 +1,9 @@
+server {
+    listen 80;
+
+    location / {
+        proxy_pass http://{{ hostvars[groups['backend'][0]]['inventory_hostname'] }}:19999/;
+        proxy_set_header Host $host;
+        proxy_http_version 1.1;
+    }
+}
