@@ -1,21 +1,31 @@
 pipeline {
     agent any
 
-    environment {
-        TF_WORKSPACE = 'terraform'
-        ANSIBLE_WORKSPACE = 'ansible'
+    tools {
+        terraform 'terraform'  // name from Global Tool Configuration
+        ansible 'ansible'      // name from Global Tool Configuration
     }
 
-    tools {
-        terraform 'terraform'
-        ansible 'ansible'
+    environment {
+        AWS_DEFAULT_REGION = 'us-east-1' // adjust if needed
     }
 
     stages {
+        stage('Clone Repository') {
+            steps {
+                git branch: 'main', url: 'https://github.com/RameshDumala1/terraform_ci.git'
+            }
+        }
+
         stage('Terraform Init & Apply') {
             steps {
-                withEnv(["PATH+TERRAFORM=${tool 'terraform'}/bin"]) {
-                    dir("${TF_WORKSPACE}") {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-credentials',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
+                    dir('terraform') {
                         sh 'terraform init'
                         sh 'terraform apply -auto-approve'
                     }
@@ -25,28 +35,27 @@ pipeline {
 
         stage('Generate Ansible Inventory') {
             steps {
-                withEnv(["PATH+TERRAFORM=${tool 'terraform'}/bin"]) {
-                    dir("${ANSIBLE_WORKSPACE}") {
-                        withCredentials([
-                            sshUserPrivateKey(
-                                credentialsId: 'ansible-ssh-key',
-                                keyFileVariable: 'ANSIBLE_KEY_FILE',
-                                usernameVariable: 'SSH_USER'
-                            )
-                        ]) {
-                            sh './generate_inventory.sh'
-                        }
-                    }
+                dir('ansible') {
+                    sh 'chmod +x generate_inventory.sh'
+                    sh './generate_inventory.sh > inventory.ini'
                 }
             }
         }
 
         stage('Run Ansible Playbooks') {
             steps {
-                withEnv(["PATH+ANSIBLE=${tool 'ansible'}/bin"]) {
-                    dir("${ANSIBLE_WORKSPACE}") {
-                        sh 'ansible-playbook -i inventory.ini playbook_backend.yml'
-                        sh 'ansible-playbook -i inventory.ini playbook_frontend.yml'
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: 'ansible-ssh-key',
+                    keyFileVariable: 'SSH_PRIVATE_KEY',
+                    usernameVariable: 'SSH_USER'
+                )]) {
+                    dir('ansible') {
+                        sh '''
+                            chmod 600 $SSH_PRIVATE_KEY
+                            export ANSIBLE_HOST_KEY_CHECKING=False
+                            ansible-playbook -i inventory.ini playbook_backend.yml --private-key=$SSH_PRIVATE_KEY -u $SSH_USER
+                            ansible-playbook -i inventory.ini playbook_frontend.yml --private-key=$SSH_PRIVATE_KEY -u $SSH_USER
+                        '''
                     }
                 }
             }
@@ -54,11 +63,11 @@ pipeline {
     }
 
     post {
-        success {
-            echo '✅ CI pipeline completed successfully.'
-        }
         failure {
             echo '❌ Build failed.'
+        }
+        success {
+            echo '✅ CI pipeline completed successfully.'
         }
     }
 }
