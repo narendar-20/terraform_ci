@@ -45,8 +45,8 @@ pipeline {
         stage('Run Ansible Playbooks') {
             steps {
                 withCredentials([sshUserPrivateKey(
-                    credentialsId: 'ansible-ssh-key',
-                    keyFileVariable: 'SSH_PRIVATE_KEY'
+                    credentialsId: 'ansible-ssh-key',  // your Jenkins credentials ID
+                    keyFileVariable: 'SSH_PRIVATE_KEY'  // The name of the environment variable where the private key is stored
                 )]) {
                     dir('ansible') {
                         sh '''
