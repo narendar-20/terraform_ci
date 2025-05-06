@@ -5,17 +5,17 @@ set -e
 
 # Define path to private key and inventory
 SSH_KEY_PATH="/var/lib/jenkins/.ssh/jenkins_key"
-INVENTORY_FILE="./ansible/inventory.ini"
+INVENTORY_FILE="./inventory.ini"
 
-# Navigate to terraform directory to extract outputs
-cd terraform
+# Navigate to terraform directory to extract outputs (go one level up, then into terraform)
+cd ../terraform
 
 # Extract IPs from Terraform output
 BACKEND_IP=$(terraform output -raw backend_ip)
 FRONTEND_IP=$(terraform output -raw frontend_ip)
 
-# Move back to root
-cd ..
+# Move back to the ansible directory
+cd ../ansible
 
 # Generate inventory.ini
 echo "Generating inventory.ini with backend IP: $BACKEND_IP and frontend IP: $FRONTEND_IP"
@@ -32,7 +32,7 @@ echo "inventory.ini generated successfully at $INVENTORY_FILE"
 
 # Optional: Run Ansible Playbooks
 echo "Running backend playbook..."
-ansible-playbook -i $INVENTORY_FILE ansible/playbook_backend.yml --private-key=$SSH_KEY_PATH -u ubuntu
+ansible-playbook -i $INVENTORY_FILE playbook_backend.yml --private-key=$SSH_KEY_PATH -u ubuntu
 
 echo "Running frontend playbook..."
-ansible-playbook -i $INVENTORY_FILE ansible/playbook_frontend.yml --private-key=$SSH_KEY_PATH -u ec2-user
+ansible-playbook -i $INVENTORY_FILE playbook_frontend.yml --private-key=$SSH_KEY_PATH -u ec2-user
