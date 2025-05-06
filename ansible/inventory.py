@@ -21,6 +21,11 @@ def main():
             }
         }
     }
+
+    # Ensure keys in _meta are the IP addresses, not variable names
+    inventory['_meta']['hostvars'][frontend_ip] = {"ansible_user": "ec2-user"}
+    inventory['_meta']['hostvars'][backend_ip] = {"ansible_user": "ubuntu"}
+
     print(json.dumps(inventory, indent=2))
 
 if __name__ == "__main__":
