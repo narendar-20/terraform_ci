@@ -1,10 +1,14 @@
 #!/bin/bash
 
-# Read IPs
+# Fix permission just in case
+chown jenkins:jenkins inventory.ini 2>/dev/null
+rm -f inventory.ini  # remove old one to avoid permissions issue
+
+# Load IPs
 BACKEND_IP=$(cat backend_ip.txt)
 FRONTEND_IP=$(cat frontend_ip.txt)
 
-# Output to inventory.ini with only valid content
+# Create clean inventory.ini
 cat <<EOF > inventory.ini
 [backend]
 $BACKEND_IP ansible_user=ubuntu ansible_ssh_private_key_file=/var/lib/jenkins/.ssh/jenkins_key
