@@ -46,7 +46,7 @@ pipeline {
             steps {
                 // For Backend (Ubuntu)
                 withCredentials([sshUserPrivateKey(
-                    credentialsId: 'ubuntu-ssh-key',  // Referencing Ubuntu credentials ID
+                    credentialsId: 'jenkins-ssh-key1',  // Updated credential ID for Ubuntu
                     keyFileVariable: 'SSH_PRIVATE_KEY'
                 )]) {
                     dir('ansible') {
@@ -60,9 +60,9 @@ pipeline {
                     }
                 }
 
-                // For Frontend (AWS EC2)
+                // For Frontend (Amazon Linux)
                 withCredentials([sshUserPrivateKey(
-                    credentialsId: 'aws-ec2-ssh-key',  // Referencing AWS EC2 credentials ID
+                    credentialsId: 'jenkins-ssh-key',  // Updated credential ID for Amazon Linux
                     keyFileVariable: 'EC2_SSH_PRIVATE_KEY'
                 )]) {
                     dir('ansible') {
