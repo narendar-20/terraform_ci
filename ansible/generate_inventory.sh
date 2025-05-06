@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# Get the Terraform outputs for frontend and backend IPs
+# Get IPs from Terraform output
 FRONTEND_IP=$(terraform -chdir=../terraform output -raw frontend_ip)
 BACKEND_IP=$(terraform -chdir=../terraform output -raw backend_ip)
 
-# Generate dynamic inventory file
+# Generate the inventory
 cat <<EOF > inventory.ini
 [frontend]
-$FRONTEND_IP ansible_user=ec2-user ansible_ssh_private_key_file=~/.ssh/your-key.pem
+$FRONTEND_IP ansible_user=ec2-user ansible_ssh_private_key_file=$ANSIBLE_KEY_FILE
 
 [backend]
-$BACKEND_IP ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/your-key.pem
+$BACKEND_IP ansible_user=ubuntu ansible_ssh_private_key_file=$ANSIBLE_KEY_FILE
 EOF
