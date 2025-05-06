@@ -14,7 +14,7 @@
 
     - name: Install Nginx
       yum:
-        name: nginx
+        name: nginx1
         state: present
 
     - name: Configure Nginx as reverse proxy
