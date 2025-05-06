@@ -5,7 +5,7 @@
     - name: Disable SELinux
       command: echo "SELinux not applicable on Amazon Linux"
       changed_when: false
-      ignore_errors: true  # Add this to ignore errors if selinux is not available
+      ignore_errors: true
 
     - name: Disable firewalld
       yum:
@@ -14,7 +14,7 @@
 
     - name: Install Nginx
       yum:
-        name: nginx1
+        name: nginx
         state: present
 
     - name: Configure Nginx as reverse proxy
