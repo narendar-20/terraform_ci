@@ -1,12 +1,22 @@
 #!/bin/bash
 
-FRONTEND_IP=$(terraform -chdir=../terraform output -raw frontend_ip)
-BACKEND_IP=$(terraform -chdir=../terraform output -raw backend_ip)
+# Fetch the IP addresses from Terraform output
+frontend_ip=$(terraform output -raw frontend_ip)
+backend_ip=$(terraform output -raw backend_ip)
 
-cat <<EOF > inventory.ini
+# Create the Ansible inventory file dynamically
+cat > inventory.ini <<EOF
 [frontend]
-c8.local ansible_host=$FRONTEND_IP ansible_user=ec2-user
+c8.local ansible_host=$frontend_ip
 
 [backend]
-u21.local ansible_host=$BACKEND_IP ansible_user=ubuntu
+u21.local ansible_host=$backend_ip
+
+[frontend:vars]
+nginx_backend_ip=$backend_ip
+
+[backend:vars]
+netdata_port=19999
 EOF
+
+echo "Inventory file generated successfully!"
