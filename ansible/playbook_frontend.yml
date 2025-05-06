@@ -3,32 +3,62 @@
   become: true
   tasks:
     - name: Disable SELinux
-      selinux:
-        state: disabled
+      command: echo "SELinux not applicable on Amazon Linux"
+      changed_when: false
+      ignore_errors: true  # Add this to ignore errors if selinux is not available
 
     - name: Disable firewalld
-      service:
+      yum:
         name: firewalld
-        state: stopped
-        enabled: no
+        state: absent
 
     - name: Install Nginx
       yum:
         name: nginx
         state: present
 
-    - name: Configure nginx for reverse proxy
+    - name: Configure Nginx as reverse proxy
       copy:
-        dest: /etc/nginx/conf.d/proxy.conf
+        dest: /etc/nginx/nginx.conf
         content: |
-          server {
-              listen 80;
-              location / {
-                  proxy_pass http://{{ hostvars['u21.local'].ansible_host }}:19999/;
-              }
+          user nginx;
+          worker_processes auto;
+          pid /var/run/nginx.pid;
+          
+          events {
+            worker_connections 1024;
+          }
+          
+          http {
+            include       /etc/nginx/mime.types;
+            default_type  application/octet-stream;
+            access_log    /var/log/nginx/access.log;
+            error_log     /var/log/nginx/error.log;
+
+            sendfile        on;
+            tcp_nopush      on;
+            tcp_nodelay     on;
+            keepalive_timeout 65;
+            types_hash_max_size 2048;
+
+            include /etc/nginx/conf.d/*.conf;
+
+            # Reverse proxy settings for backend
+            server {
+                listen 80;
+                server_name c8.local;
+
+                location / {
+                    proxy_pass http://{{ backend_ip }}:19999;  # Proxy to the backend server's IP and port 19999 (Netdata)
+                    proxy_set_header Host $host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                }
+            }
           }
 
-    - name: Start and enable nginx
+    - name: Ensure Nginx is running
       service:
         name: nginx
         state: started
