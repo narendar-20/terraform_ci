@@ -14,7 +14,7 @@ pipeline {
 
         stage('Clone Repository') {
             steps {
-                git url: 'https://github.com/RameshDumala1/terraform_ci.git'
+                git branch: 'main', url: 'https://github.com/RameshDumala1/terraform_ci.git'
             }
         }
 
