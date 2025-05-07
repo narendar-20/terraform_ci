@@ -5,13 +5,13 @@ pipeline {
         ansible 'ansible'
     }
     environment {
-        AWS_DEFAULT_REGION = 'us-east-1'
+        AWS_DEFAULT_REGION = 'us-east-2'
     }
 
     stages {
         stage('Clone Repo') {
             steps {
-                git branch: 'main', url: 'https://github.com/RameshDumala1/terraform_ci.git'
+                git branch: 'main', url: 'https://github.com/narendar-20/terraform_ci.git'
             }
         }
 
@@ -19,7 +19,7 @@ pipeline {
             steps {
                 withCredentials([[ 
                     $class: 'AmazonWebServicesCredentialsBinding', 
-                    credentialsId: 'aws-credentials', 
+                    credentialsId: 'narendarp', 
                     accessKeyVariable: 'AWS_ACCESS_KEY_ID', 
                     secretKeyVariable: 'AWS_SECRET_ACCESS_KEY' 
                 ]]) {
@@ -42,8 +42,8 @@ pipeline {
 
         stage('Configure VMs') {
             steps {
-                withCredentials([sshUserPrivateKey(credentialsId: 'ssh-key-ubuntu', keyFileVariable: 'UBUNTU_KEY')]) {
-                    withCredentials([sshUserPrivateKey(credentialsId: 'ssh-key-amazon', keyFileVariable: 'AMAZON_KEY')]) {
+                withCredentials([sshUserPrivateKey(credentialsId: 'narendar-ubuntu', keyFileVariable: 'UBUNTU_KEY')]) {
+                    withCredentials([sshUserPrivateKey(credentialsId: 'narendar-ec2', keyFileVariable: 'AMAZON_KEY')]) {
                         dir('ansible') {
                             sh '''
                                 chmod 600 $UBUNTU_KEY $AMAZON_KEY
